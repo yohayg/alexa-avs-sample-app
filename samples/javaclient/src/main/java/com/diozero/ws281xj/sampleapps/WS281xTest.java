@@ -1,0 +1,212 @@
+package com.diozero.ws281xj.sampleapps;
+
+/*
+ * #%L
+ * Organisation: mattjlewis
+ * Project:      Device I/O Zero - WS281x Java Wrapper
+ * Filename:     WS281xTest.java  
+ * 
+ * This file is part of the diozero project. More information about this project
+ * can be found at http://www.diozero.com/
+ * %%
+ * Copyright (C) 2016 - 2017 mattjlewis
+ * %%
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ * #L%
+ */
+
+
+import com.diozero.ws281xj.PixelAnimations;
+import com.diozero.ws281xj.PixelColour;
+import com.diozero.ws281xj.WS281x;
+
+import static com.diozero.ws281xj.PixelAnimations.delay;
+
+public class WS281xTest {
+	private volatile static boolean run =true;
+	public static void main(String[] args) {
+		int gpio_num = 13;
+		int brightness = 64;	// 0..255
+		//int num_pixels = 12;
+		int num_pixels = 12;
+		
+		System.out.println("Using GPIO " + gpio_num);
+
+
+
+
+//		Scanner keyboard = new Scanner(System.in);
+		try (WS281x ws281x = new WS281x(gpio_num, brightness, num_pixels)) {
+
+			rainbowColours(ws281x);
+			test2(ws281x);
+			hsbTest(ws281x);
+			hslTest(ws281x);
+
+			while (true) {
+				loop(ws281x);
+			}
+		} catch (Throwable t) {
+			System.out.println("Error: " + t);
+			t.printStackTrace();
+		}
+	}
+	
+	private static void rainbowColours(WS281x ws281x) {
+		System.out.println("rainbowColours()");
+		
+		int[] colours = PixelColour.RAINBOW;
+		
+		for (int i=0; i<250; i++) {
+			for (int pixel=0; pixel<ws281x.getNumPixels(); pixel++) {
+				ws281x.setPixelColour(pixel, colours[(i+pixel) % colours.length]);
+			}
+			
+			ws281x.render();
+			delay(50);
+		}
+	}
+	
+	private static void test2(WS281x ws281x) {
+		System.out.println("test2()");
+		
+		// Set all off
+		ws281x.allOff();
+		
+		int delay = 20;
+
+		// Gradually add red
+		System.out.println("Adding red...");
+		for (int i=0; i<256; i+=2) {
+			for (int pixel=0; pixel<ws281x.getNumPixels(); pixel++) {
+				ws281x.setRedComponent(pixel, i);
+			}
+			
+			ws281x.render();
+			delay(delay);
+		}
+
+		// Gradually add green
+		System.out.println("Adding green...");
+		for (int i=0; i<256; i+=2) {
+			for (int pixel=0; pixel<ws281x.getNumPixels(); pixel++) {
+				ws281x.setGreenComponent(pixel, i);
+			}
+			
+			ws281x.render();
+			delay(delay);
+		}
+
+		// Gradually add blue
+		System.out.println("Adding blue...");
+		for (int i=0; i<256; i+=2) {
+			for (int pixel=0; pixel<ws281x.getNumPixels(); pixel++) {
+				ws281x.setGreenComponent(pixel, i);
+			}
+			
+			ws281x.render();
+			delay(delay);
+		}
+		
+		// Set all off
+		ws281x.allOff();
+	}
+	
+	private static void hsbTest(WS281x ws281x) {
+		System.out.println("hsbTest()");
+		float brightness = 0.5f;
+		float saturation_start = 0;
+		float saturation_step = 0.01f;
+		
+		for (float hue=0; hue<1; hue+=0.05) {
+			for (float saturation=saturation_start; saturation>=0 & saturation<=1; saturation+=saturation_step) {
+				for (int pixel=0; pixel<ws281x.getNumPixels(); pixel++) {
+					ws281x.setPixelColourHSB(pixel, hue, saturation, brightness);
+				}
+				ws281x.render();
+				delay(20);
+			}
+			saturation_start = 1-saturation_start;
+			saturation_step = -saturation_step;
+		}
+	}
+	
+	private static void hslTest(WS281x ws281x) {
+		System.out.println("hslTest()");
+		float luminance = 0.5f;
+		float saturation_start = 0;
+		float saturation_step = 0.01f;
+		
+		for (float hue=0; hue<360; hue+=18) {
+			for (float saturation=saturation_start; saturation>=0 & saturation<=1; saturation+=saturation_step) {
+				for (int pixel=0; pixel<ws281x.getNumPixels(); pixel++) {
+					ws281x.setPixelColourHSL(pixel, hue, saturation, luminance);
+				}
+				ws281x.render();
+				delay(20);
+			}
+			saturation_start = 1-saturation_start;
+			saturation_step = -saturation_step;
+		}
+	}
+	
+	private static void loop(WS281x ws281x) {
+		System.out.println("loop()");
+		
+		// Some example procedures showing how to display to the pixels:
+		System.out.println("colourWipe - red");
+		PixelAnimations.wipeRed(ws281x);
+		delay(1000);
+		System.out.println("colourWipe - blue");
+		PixelAnimations.wipeBlue(ws281x);
+		delay(1000);
+		System.out.println("colourWipe - green");
+		PixelAnimations.wipeGreen(ws281x);
+		delay(1000);
+
+		System.out.println("colourWipe - composite white");
+		PixelAnimations.colourWipe(ws281x, PixelColour.createColourRGB(255, 255, 255,0), 50); // composite white
+		delay(1000);
+		System.out.println("colourWipe - composite white and white led");
+		PixelAnimations.wipeWhite(ws281x);
+		delay(1000);
+
+
+//		// / Send a theatre pixel chase in...
+//		System.out.println("theatreChase - red");
+//		PixelAnimations.theatreChase(ws281x, PixelColour.createColourRGB(127, 0, 0,0), 50); // Red
+//		System.out.println("theatreChase - green");
+//		PixelAnimations.theatreChase(ws281x, PixelColour.createColourRGB(0, 127, 0,0), 50); // White
+//		System.out.println("theatreChase - blue");
+//		PixelAnimations.theatreChase(ws281x, PixelColour.createColourRGB(0, 0, 127,0), 50); // Blue
+//		System.out.println("theatreChase - composite white");
+//		PixelAnimations.theatreChase(ws281x, PixelColour.createColourRGB(127, 127, 127,127), 50); // composite white and white led
+//		System.out.println("theatreChase - composite white and white led");
+//		PixelAnimations.theatreChase(ws281x, PixelColour.createColourRGB(127, 127, 127,127), 50); // composite white and white led
+//
+//		System.out.println("rainbow");
+//		PixelAnimations.rainbow(ws281x, 20);
+//		System.out.println("rainbowCycle");
+//		PixelAnimations.rainbowCycle(ws281x, 20);
+//		System.out.println("theatreChaseRainbow");
+//		PixelAnimations.theatreChaseRainbow(ws281x, 50);
+	}
+
+
+}

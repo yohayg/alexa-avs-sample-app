@@ -155,6 +155,12 @@
           <include>**/*.properties</include>
         </includes>
       </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>**/*.so</include>
+        </includes>
+      </resource>
       <!-- Don't filter the mp3 files or they'll get corrupted -->
       <resource>
         <directory>src/main/resources</directory>

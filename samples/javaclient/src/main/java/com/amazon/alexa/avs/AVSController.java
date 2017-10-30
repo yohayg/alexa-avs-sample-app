@@ -44,7 +44,8 @@ import com.amazon.alexa.avs.wakeword.WakeWordDetectedHandler;
 import com.amazon.alexa.avs.wakeword.WakeWordIPC;
 import com.amazon.alexa.avs.wakeword.WakeWordIPC.IPCCommand;
 import com.amazon.alexa.avs.wakeword.WakeWordIPCFactory;
-
+import com.diozero.ws281xj.PixelAnimations;
+import com.diozero.ws281xj.WS281x;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,8 +121,9 @@ public class AVSController implements RecordingStateListener, AlertHandler, Aler
     private NotificationManager notificationManager;
     private CardHandler cardHandler;
     private ResultListener listener;
+    private WS281x ws281x=null;
 
-    public AVSController(AVSAudioPlayerFactory audioFactory, AlertManagerFactory alarmFactory,
+    public AVSController(WS281x ws281x,AVSAudioPlayerFactory audioFactory, AlertManagerFactory alarmFactory,
             AVSClientFactory avsClientFactory, DialogRequestIdAuthority dialogRequestIdAuthority,
             WakeWordIPCFactory wakewordIPCFactory, DeviceConfig config) throws Exception {
 
@@ -129,6 +131,7 @@ public class AVSController implements RecordingStateListener, AlertHandler, Aler
         this.wakeWordAgentEnabled = config.getWakeWordAgentEnabled();
 
         this.config = config;
+        this.ws281x = ws281x;
 
         if (this.wakeWordAgentEnabled) {
             try {
@@ -646,11 +649,13 @@ public class AVSController implements RecordingStateListener, AlertHandler, Aler
     @Override
     public void recordingStarted() {
         player.playMp3FromResource(START_SOUND);
+        PixelAnimations.wipeBlue(ws281x);
     }
 
     // audio state callback for when recording has completed
     @Override
     public void recordingCompleted() {
+        this.ws281x.allOff();
         player.playMp3FromResource(END_SOUND);
     }
 
@@ -708,6 +713,7 @@ public class AVSController implements RecordingStateListener, AlertHandler, Aler
 
     @Override
     public void onAlexaSpeechStarted() {
+        PixelAnimations.theatreChaseRainbow(ws281x,0);
         dependentDirectiveThread.block();
 
         if (alertManager.hasActiveAlerts()) {
@@ -719,6 +725,7 @@ public class AVSController implements RecordingStateListener, AlertHandler, Aler
 
     @Override
     public void onAlexaSpeechFinished() {
+        ws281x.allOff();
         dependentDirectiveThread.unblock();
 
         if (alertManager.hasActiveAlerts()) {
@@ -730,6 +737,7 @@ public class AVSController implements RecordingStateListener, AlertHandler, Aler
 
     @Override
     public void onParsingFailed(String unparseable) {
+        PixelAnimations.wipeRed(ws281x);
         String message = "Failed to parse message from AVS";
         sendRequest(RequestFactory.createSystemExceptionEncounteredEvent(unparseable,
                 ExceptionType.UNEXPECTED_INFORMATION_RECEIVED, message, player.getPlaybackState(),
@@ -754,6 +762,7 @@ public class AVSController implements RecordingStateListener, AlertHandler, Aler
 
     @Override
     public synchronized void onWakeWordDetected() {
+        PixelAnimations.wipeGreen(ws281x);
         if (acceptWakeWordEvents) {
             wakeWordDetectedHandler.onWakeWordDetected();
         }
