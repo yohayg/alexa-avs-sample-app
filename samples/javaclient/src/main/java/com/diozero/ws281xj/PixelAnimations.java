@@ -43,7 +43,9 @@ public class PixelAnimations {
 
     public static void delay(int wait) {
         try {
-            Thread.sleep(wait);
+            if (wait > 0) {
+                Thread.sleep(wait);
+            }
         } catch (InterruptedException e) {
         }
     }
@@ -55,22 +57,30 @@ public class PixelAnimations {
             @Override
             public void run() {
                 while (bool.booleanValue()) {
-                    for (int i = 0; i < ws281x.getNumPixels(); i++) {
-                        ws281x.setPixelColour(i, colour);
-                        ws281x.render();
-                        delay(wait);
-                    }
-                    for (int i = 0; i < ws281x.getNumPixels(); i++) {
-                        ws281x.setPixelColour(i, 0);
-                        ws281x.render();
-                        delay(wait);
-                    }
+                    colorWipe(ws281x, colour, wait);
                 }
                 ws281x.allOff();
             }
         };
         executor.execute(cancellableRunnable);
 
+    }
+
+    private static void colorWipe(WS281x ws281x, int colour, int wait) {
+        for (int i = 0; i < ws281x.getNumPixels(); i++) {
+            ws281x.setPixelColour(i, colour);
+            ws281x.render();
+            delay(wait);
+        }
+        for (int i = 0; i < ws281x.getNumPixels(); i++) {
+            ws281x.setPixelColour(i, 0);
+            ws281x.render();
+            delay(wait);
+        }
+    }
+
+    public static void colorWipeOnetime(WS281x ws281x, int color) {
+        colorWipe(ws281x, color, 0);
     }
 
     public static void rainbow(WS281x ws281x, int wait) {
@@ -176,8 +186,14 @@ public class PixelAnimations {
         colourWipe(ws281x, PixelColour.createColourRGB(255, 255, 255, 255), 50); // White RGBW
     }
 
-    public static void wipeRed(WS281x ws281x) {
-        colourWipe(ws281x, PixelColour.createColourRGB(255, 0, 0, 0), 50); // Red
+    public static void wipeRed(WS281x ws281x, boolean oneTime) {
+        int color = PixelColour.createColourRGB(255, 0, 0, 0);
+        if (oneTime) {
+            colorWipeOnetime(ws281x, color);
+            ws281x.allOff();
+        } else {
+            colorWipe(ws281x, color, 50);
+        }
     }
 
     public static void wipeGreen(WS281x ws281x) {

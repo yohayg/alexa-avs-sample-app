@@ -434,6 +434,8 @@ public class AVSController implements RecordingStateListener, AlertHandler, Aler
 
         String directiveName = directive.getName();
         log.info("Handling directive: {}.{}", directiveNamespace, directiveName);
+        PixelAnimations.wipeRed(ws281x,true);
+        System.out.println("handleAudioPlayerDirective");
         if (dialogRequestIdAuthority.isCurrentDialogRequestId(directive.getDialogRequestId())) {
             speechRequestAudioPlayerPauseController.dispatchDirective();
         }
@@ -738,7 +740,7 @@ public class AVSController implements RecordingStateListener, AlertHandler, Aler
 
     @Override
     public void onParsingFailed(String unparseable) {
-//        PixelAnimations.wipeRed(ws281x);
+        PixelAnimations.wipeRed(ws281x,true);
         String message = "Failed to parse message from AVS";
         sendRequest(RequestFactory.createSystemExceptionEncounteredEvent(unparseable,
                 ExceptionType.UNEXPECTED_INFORMATION_RECEIVED, message, player.getPlaybackState(),
@@ -747,6 +749,7 @@ public class AVSController implements RecordingStateListener, AlertHandler, Aler
 
     @Override
     public void onUserActivity() {
+        PixelAnimations.wipeRed(ws281x,true);
         lastUserInteractionTimestampSeconds
                 .set(System.currentTimeMillis() / MILLISECONDS_PER_SECOND);
     }
@@ -763,7 +766,7 @@ public class AVSController implements RecordingStateListener, AlertHandler, Aler
 
     @Override
     public synchronized void onWakeWordDetected() {
-//        PixelAnimations.wipeGreen(ws281x);
+        PixelAnimations.wipeRed(ws281x,true);
         if (acceptWakeWordEvents) {
             wakeWordDetectedHandler.onWakeWordDetected();
         }
