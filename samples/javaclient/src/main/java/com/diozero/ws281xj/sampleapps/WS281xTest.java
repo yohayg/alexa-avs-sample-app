@@ -171,7 +171,7 @@ public class WS281xTest {
 		
 		// Some example procedures showing how to display to the pixels:
 		System.out.println("colourWipe - red");
-		PixelAnimations.wipeRed(ws281x);
+		PixelAnimations.wipeRed(ws281x,true);
 		delay(1000);
 		System.out.println("colourWipe - blue");
 		PixelAnimations.wipeBlue(ws281x);
