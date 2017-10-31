@@ -32,89 +32,159 @@ package com.diozero.ws281xj;
  */
 
 
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
 public class PixelAnimations {
-	public static void delay(int wait) {
-		try { Thread.sleep(wait); }  catch (InterruptedException e) { }
-	}
-	
-	public static void colourWipe(WS281x ws281x, int colour, int wait) {
-		for (int i=0; i<ws281x.getNumPixels(); i++) {
-			ws281x.setPixelColour(i, colour);
-			ws281x.render();
-//			delay(wait);
-		}
-	}
 
-	public static void rainbow(WS281x ws281x, int wait) {
-		for (int j=0; j<256; j++) {
-			for (int i=0; i<ws281x.getNumPixels(); i++) {
-				ws281x.setPixelColour(i, PixelColour.wheel((i+j) & 255));
-			}
-			ws281x.render();
-//			delay(wait);
-		}
-	}
+    private static CancellableRunnable cancellableRunnable;
 
-	/* Slightly different, this makes the rainbow equally distributed throughout */
-	public static void rainbowCycle(WS281x ws281x, int wait) {
-		for (int j=0; j<256*5; j++) { // 5 cycles of all colors on wheel
-			for (int i=0; i<ws281x.getNumPixels(); i++) {
-				ws281x.setPixelColour(i, PixelColour.wheel(((i * 256 / ws281x.getNumPixels()) + j) & 255));
-			}
-			ws281x.render();
-//			delay(wait);
-		}
-	}
+    public static void delay(int wait) {
+        try {
+            Thread.sleep(wait);
+        } catch (InterruptedException e) {
+        }
+    }
 
-	/* Theatre-style crawling lights */
-	public static void theatreChase(WS281x ws281x, int c, int wait) {
-		for (int j=0; j<10; j++) {  //do 10 cycles of chasing
-			for (int q=0; q < 3; q++) {
-				for (int i=0; i < ws281x.getNumPixels(); i=i+3) {
-					ws281x.setPixelColour(i+q, c);    //turn every third pixel on
-				}
-				ws281x.render();
+    public static Executor executor = Executors.newSingleThreadExecutor();
 
-//				delay(wait);
+    public static void colourWipe(WS281x ws281x, int colour, int wait) {
+        cancellableRunnable = new CancellableRunnable() {
+            @Override
+            public void run() {
+                while (bool.booleanValue()) {
+                    for (int i = 0; i < ws281x.getNumPixels(); i++) {
+                        ws281x.setPixelColour(i, colour);
+                        ws281x.render();
+                        delay(wait);
+                    }
+                    for (int i = 0; i < ws281x.getNumPixels(); i++) {
+                        ws281x.setPixelColour(i, 0);
+                        ws281x.render();
+                        delay(wait);
+                    }
+                }
+                ws281x.allOff();
+            }
+        };
+        executor.execute(cancellableRunnable);
 
-				for (int i=0; i < ws281x.getNumPixels(); i=i+3) {
-					ws281x.setPixelColour(i+q, 0);        //turn every third pixel off
-				}
-			}
-		}
-	}
+    }
 
-	/* Theatre-style crawling lights with rainbow effect */
-	public static void theatreChaseRainbow(WS281x ws281x, int wait) {
-		for (int j=0; j < 256; j++) {     // cycle all 256 colours in the wheel
-			for (int q=0; q < 3; q++) {
-				for (int i=0; i < ws281x.getNumPixels(); i=i+3) {
-					ws281x.setPixelColour(i+q, PixelColour.wheel( (i+j) % 255));    //turn every third pixel on
-				}
-				ws281x.render();
+    public static void rainbow(WS281x ws281x, int wait) {
 
-//				delay(wait);
+        cancellableRunnable = new CancellableRunnable() {
+            @Override
+            public void run() {
+                while (bool.booleanValue()) {
+                    for (int j = 0; j < 256; j++) {
+                        for (int i = 0; i < ws281x.getNumPixels(); i++) {
+                            ws281x.setPixelColour(i, PixelColour.wheel((i + j) & 255));
+                        }
+                        ws281x.render();
+                        delay(wait);
+                    }
+                }
+            }
+        };
+        executor.execute(cancellableRunnable);
+    }
 
-				for (int i=0; i < ws281x.getNumPixels(); i=i+3) {
-					ws281x.setPixelColour(i+q, 0);        //turn every third pixel off
-				}
-			}
-		}
-	}
+    /* Slightly different, this makes the rainbow equally distributed throughout */
+    public static void rainbowCycle(WS281x ws281x, int wait) {
 
-	public static void wipeWhite(WS281x ws281x) {
-		colourWipe(ws281x, PixelColour.createColourRGB(255, 255, 255, 255), 50); // White RGBW
-	}
+        // 5 cycles of all colors on wheel
+        cancellableRunnable = new CancellableRunnable() {
+            @Override
+            public void run() {
+                while (bool.booleanValue()) {
+                    for (int j = 0; j < 256 * 5; j++) { // 5 cycles of all colors on wheel
+                        for (int i = 0; i < ws281x.getNumPixels(); i++) {
+                            ws281x.setPixelColour(i, PixelColour.wheel(((i * 256 / ws281x.getNumPixels()) + j) & 255));
+                        }
+                        ws281x.render();
+                        delay(wait);
+                    }
+                }
+                ws281x.allOff();
+            }
 
-	public static void wipeRed(WS281x ws281x) {
-		colourWipe(ws281x, PixelColour.createColourRGB(255, 0, 0,0), 50); // Red
-	}
+        };
+        executor.execute(cancellableRunnable);
+    }
 
-	public static void wipeGreen(WS281x ws281x) {
-		colourWipe(ws281x, PixelColour.createColourRGB(0, 255, 0,0), 50); // Green
-	}
+    public static void cancelAnimation() {
+        cancellableRunnable.cancel();
+    }
 
-	public static void wipeBlue(WS281x ws281x) {
-		colourWipe(ws281x, PixelColour.createColourRGB(0, 0, 255,0), 50); // Blue
-	}
+    /* Theatre-style crawling lights */
+    public static void theatreChase(WS281x ws281x, int c, int wait) {
+        cancellableRunnable = new CancellableRunnable() {
+            @Override
+            public void run() {
+                while (bool.booleanValue())
+                    for (int j = 0; j < 10; j++) {  //do 10 cycles of chasing
+                        for (int q = 0; q < 3; q++) {
+                            for (int i = 0; i < ws281x.getNumPixels(); i = i + 3) {
+                                ws281x.setPixelColour(i + q, c);    //turn every third pixel on
+                            }
+                            ws281x.render();
+
+                            delay(wait);
+
+                            for (int i = 0; i < ws281x.getNumPixels(); i = i + 3) {
+                                ws281x.setPixelColour(i + q, 0);        //turn every third pixel off
+                            }
+                        }
+                    }
+            }
+        };
+        executor.execute(cancellableRunnable);
+
+    }
+
+    /* Theatre-style crawling lights with rainbow effect */
+    public static void theatreChaseRainbow(WS281x ws281x, int wait) {
+
+        cancellableRunnable = new CancellableRunnable() {
+            @Override
+            public void run() {
+                while (bool.booleanValue()) {
+                    for (int j = 0; j < 256; j++) {     // cycle all 256 colours in the wheel
+                        for (int q = 0; q < 3; q++) {
+                            for (int i = 0; i < ws281x.getNumPixels(); i = i + 3) {
+                                ws281x.setPixelColour(i + q, PixelColour.wheel((i + j) % 255));    //turn every third pixel on
+                            }
+                            ws281x.render();
+
+                            delay(wait);
+
+                            for (int i = 0; i < ws281x.getNumPixels(); i = i + 3) {
+                                ws281x.setPixelColour(i + q, 0);        //turn every third pixel off
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        executor.execute(cancellableRunnable);
+    }
+
+    public static void wipeWhite(WS281x ws281x) {
+        colourWipe(ws281x, PixelColour.createColourRGB(255, 255, 255, 255), 50); // White RGBW
+    }
+
+    public static void wipeRed(WS281x ws281x) {
+        colourWipe(ws281x, PixelColour.createColourRGB(255, 0, 0, 0), 50); // Red
+    }
+
+    public static void wipeGreen(WS281x ws281x) {
+        colourWipe(ws281x, PixelColour.createColourRGB(0, 255, 0, 0), 50); // Green
+    }
+
+    public static void wipeBlue(WS281x ws281x) {
+        colourWipe(ws281x, PixelColour.createColourRGB(0, 0, 255, 0), 50); // Blue
+    }
 }
